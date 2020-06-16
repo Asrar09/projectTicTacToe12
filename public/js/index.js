@@ -1,118 +1,161 @@
 // JavaScript Document
 
-const x = "assets/x-mark.png"
-const o = "assets/o-mark.png"
-const blank = "assets/blank.png"
-let count = 0;
-let finished = false;
-let game_count = 1;
-let o_win = 0;
-let x_win = 0;
-let tie_count = 0
+var x = "assets/x-mark.png"
+var o = "assets/o-mark.png"
+var blank = "assets/blank.png"
+var count = 0;
+var finished = false;
+var game_count = 1;
+var o_win = 0;
+var x_win = 0;
+var tie_count = 0
+var boardSize = 3
+var board = []
+var turn = "O"
 
+
+function generateBoard() {
+  $("#board2").css({"background-color": "white", "width": `${80 * boardSize}px`, "height": `${80 * boardSize}px, "margin": "0"`});
+  for(a = 0 ; a < boardSize * boardSize; a++){
+    let z = `<img id=${a} src='./assets/blank.png' style='width: 80px; height: 80px; border: 1px solid black;'/>`
+    $("#board2").append(z)
+  }
+}
+generateBoard() //First Generate board
 
 function reset() {
-  $("#game img").each(function(index, value){
+  $("#board2 img").each(function(index, value){
    value.src = blank
  })
   $("#game img").removeClass('disable')
   $("#game img").removeClass('o')
   $("#game img").removeClass('x')
-  $('#o_turn').text('Turn')
-  $('#x_turn').text('')
+  $('#o_turn').text(game_count % 2 === 0 ? "" : "Turn")
+  $('#x_turn').text(game_count % 2 === 0 ? "Turn" : "")
   count = 0
-  tie_count = 0
   finished = false
+  board = []
+  turn = game_count % 2 === 0 ? "X" : "O"
+  console.log('start',turn)
 };
 
-function doWinning(winner, winnerVar){
-  let returnVal = confirm("O Wins the game! Play another round?")
-  window[winnerVar]++
-  $(`#${winnerVar}`).text(window[winnerVar])
-  returnVal && reset()
+function decideWinner(inputArray){
+  const checkUndefined = inputArray.includes(undefined)
+  if (inputArray.length === boardSize && !checkUndefined) {
+    let allEqual = inputArray.every( (val, i, arr) => val === arr[0] && val !== undefined)
+    if(allEqual) {
+      finished = true;
+      if(turn === "O"){ //reversed because turn value already changed
+        x_win++
+        $('#x_win').text(x_win)
+      } else {
+        o_win++
+        $('#o_win').text(o_win)
+      }
+      let returnVal = confirm(`${turn === "O" ? "X" : "O"} Wins the game! Play another round?`)
+      if(returnVal) {
+        game_count++
+        $('#game_count').text(game_count)
+        return reset()
+      }
+    }   
+  }
 }
 
-$('#game img').click(function(){
-  console.log('before this', $('#col-1').children().src)
+function checkWinner() {
+  let check = []
+  let check1 = []
+  let check2 = []
+  let arrayCheck = []
+  arrayCheck.includes(undefined)
+  console.log('board',board)
+  
+
+  if (count === boardSize * boardSize) {
+    game_count++
+    tie_count++
+    finished = true;
+    alert('Its a tie.')
+    $('#game_count').text(game_count)
+    $('#tie_count').text(tie_count)
+    reset()
+  }
+
+  //row checking
+  for(a = 0; a < boardSize*boardSize; a+=boardSize){
+    check = board.slice(a,a+boardSize)
+    arrayCheck.push(check)
+    decideWinner(check)
+  }
+
+  check = []
+ 
+  //Column checking
+  for(c = 0; c < boardSize; c++){
+    for(b = 0; b < boardSize; b++){
+      check.push(arrayCheck[b][c])
+    }
+    decideWinner(check)
+    check = []
+  }
+
+  //diagonalChecking
+  for(d = 0; d < boardSize; d++){
+    check1.push(arrayCheck[d][d])
+    check2.push(arrayCheck[d][boardSize - 1 - d])
+  }
+  decideWinner(check1)
+  decideWinner(check2)
+}
+
+
+$('#scaleDropdown').change(function(){
+  let sel = document.getElementById('scaleDropdown');
+  let strUser = sel.options[sel.selectedIndex].value;
+  boardSize = Number(strUser)
+  $('#board2').empty()
+  generateBoard()
+})
+
+$('#game').on("click", "img", function(){
+  console.log('finished', finished)
   if (finished) {
     //do nothing
   } else if ($(this).hasClass('disable')) {
     alert('Already selected')
-  } else if (count%2 == 0) {
+  } else if (turn == "O") {
     count++
-    console.log('O')
     this.src = o
-    $(this).addClass('disable o')
+    board[$(this).attr('id')] = "O"
+    turn = "X"
+    $(this).addClass('disable')
     $('#o_turn').text('')
     $('#x_turn').text('Turn')
+    checkWinner()
   } else {
     count++
-    console.log('X')
+    board[$(this).attr('id')] = "X"
     this.src = x
-    $(this).addClass('disable x')
+    turn = "O"
+    $(this).addClass('disable')
     $('#o_turn').text('Turn')
     $('#x_turn').text('')
+    checkWinner() 
   }
-  console.log('after this', this.src)
 })
 
-// $("#game img").on("load", function () {
-$('#game img').on("load", function () {
-  console.log('onLoad')
-  if (count == 9) {
-    game_count++
-    tie_count++
-    alert('Its a tie. It will restart.')
-    $('#game_count').text(game_count)
-    $('#tie_count').text(tie_count)
-    reset()
-  } else if (count%2 == 0) {
-    if (
-      $("#one").hasClass('x') && $("#two").hasClass('x') && $("#three").hasClass('x') || 
-      $("#four").hasClass('x') && $("#five").hasClass('x') && $("#six").hasClass('x') || 
-      $("#seven").hasClass('x') && $("#eight").hasClass('x') && $("#nine").hasClass('x') || 
-      $("#one").hasClass('x') && $("#four").hasClass('x') && $("#seven").hasClass('x') || 
-      $("#two").hasClass('x') && $("#five").hasClass('x') && $("#eight").hasClass('x') || 
-      $("#three").hasClass('x') && $("#six").hasClass('x') && $("#nine").hasClass('x') || 
-      $("#one").hasClass('x') && $("#five").hasClass('x') && $("#nine").hasClass('x') || 
-      $("#three").hasClass('x') && $("#five").hasClass('x') && $("#seven").hasClass('x')
-    )
-    {
-      game_count++
-      x_win++
-      $('#game_count').text(game_count)
-      $('#x_win').text(x_win)
-      finished = true
-      let returnVal = confirm("X Wins the game! Play another round?")
-      returnVal && reset()
-      // setTimeout(doWinning(x_win, 'x_win'), 30000);
-    }
-  } else if  (
-    $("#one").hasClass('o') && $("#two").hasClass('o') && $("#three").hasClass('o') ||
-    $("#four").hasClass('o') && $("#five").hasClass('o') && $("#six").hasClass('o') ||
-    $("#seven").hasClass('o') && $("#eight").hasClass('o') && $("#nine").hasClass('o') ||
-    $("#one").hasClass('o') && $("#four").hasClass('o') && $("#seven").hasClass('o') ||
-    $("#two").hasClass('o') && $("#five").hasClass('o') && $("#eight").hasClass('o') ||
-    $("#three").hasClass('o') && $("#six").hasClass('o') && $("#nine").hasClass('o') ||
-    $("#one").hasClass('o') && $("#five").hasClass('o') && $("#nine").hasClass('o') ||
-    $("#three").hasClass('o') && $("#five").hasClass('o') && $("#seven").hasClass('o')
-    ) 
-  {
-    game_count++
-    o_win++
-    $('#game_count').text(game_count)
-    $('#o_win').text(o_win)
-    finished = true
-    let returnVal = confirm("O Wins the game! Play another round?")
-    returnVal && reset()
-    // setTimeout(doWinning(o_win, 'o_win'), 30000);
-  }
+// $('#board').on("load", "img", function() {
+//   checkWinner()
+// });
+
+$("#reset").click(function(){
+  finished ? alert('Please restart the game') : reset();
 });
-$("#reset").click(reset);
 
 $("#restart").click(function(){
   const restartConfirm = confirm('Restarting the game ?')
   if (restartConfirm){
+    tie_count = 0
     game_count = 1
     o_win = 0
     x_win = 0;
